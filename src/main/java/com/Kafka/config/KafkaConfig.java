@@ -1,7 +1,7 @@
 package com.Kafka.config;
 
 public class KafkaConfig {
-    public static final String BOOTSTRAPSERVERS  = "kafka-1:9092";
+    public static final String BOOTSTRAPSERVERS  = "127.0.0.1:29092";
     public static final String TOPIC = "Twitter-com.Kafka";
     public static final String ACKS_CONFIG = "all";
     public static final String MAX_IN_FLIGHT_CONN = "5";
