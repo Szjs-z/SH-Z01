@@ -1,7 +1,0 @@
-/Users/szjsz/Applications/apache-maven-3.8.8/bin/mvn clean package
-
-
-
-
-
-
