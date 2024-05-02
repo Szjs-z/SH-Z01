@@ -50,4 +50,43 @@ Kafka clients are users of the system, and there are two basic types: producers 
 
 *==Producers==* create new messages. In other publish/subscribe systems. A message will be produced to a specific topic. By default, the producer will <u>balance messages over all partitions of a topic evenly</u>. In some cases, the producer will direct <u>messages to specific partitions</u>. This is typically done using the message key and a partitioner that will generate a hash of the key and map it to a specific partition. This ensures that all messages produced with a given key will get written to the same partition. The producer could also use a <u>custom partitioner</u> that follows other business rules for mapping messages to partitions.
 
-*==Consumers==* read messages. The consumer subscribes to one or more topics and reads the messages in the order in which they were produced to each partition. 
+*==Consumers==* read messages. The consumer <u>subscribes to one or more topics and reads the messages in the order in which they were produced to each partition</u>. 
+
+The consumer keeps track of which messages it has already consumed by keeping track of the offset of messages. The *==offset==*—an integer value that continually increases—is another piece of metadata that Kafka adds to each message as it is produced. Each message in a given partition has a unique offset, and the following message has a greater offset (though not necessarily monotonically greater). By storing the next possible offset for each partition, typically in Kafka itself, a consumer can stop and restart without losing its place.
+
+Consumers work as part of a *==consumer group==*, which is one or more consumers that work together to consume a topic. <u>The group ensures that each partition is only consumed by one member</u>.
+
+![kdg2 0106](https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043072/files/assets/kdg2_0106.png)
+
+In [Figure 1-6](https://learning.oreilly.com/library/view/kafka-the-definitive/9781492043072/ch01.html#fig-6-consumer), there are three consumers in a single group consuming a topic. Two of the consumers are working from one partition each, while the third consumer is working from two partitions. The mapping of a consumer to a partition is often called *==ownership==* of the partition by the consumer.
+
+In this way, consumers can horizontally scale to consume topics with a large number of messages. Additionally, if a single consumer fails, the remaining members of the group will reassign the partitions being consumed to take over for the missing member.
+
+
+
+### Brokers and Clusters
+
+A single Kafka server is called a *broker*. The broker receives messages from producers, assigns offsets to them, and writes the messages to storage on disk. It also services consumers, responding to fetch requests for partitions and responding with the messages that have been published.
+
+![kdg2 0107](https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043072/files/assets/kdg2_0107.png)
+
+Kafka brokers are designed to operate as part of a *==cluster==*. Within a cluster of brokers, one broker will also function as the cluster *==controller==* (elected automatically from the live members of the cluster).The controller is responsible for administrative operations, including <u>assigning partitions to brokers and monitoring for broker failures.</u> 
+
+A partition is owned by a single broker in the cluster, and that broker is called the *==leader==* of the partition. A replicated partition (as seen in [Figure 1-7](https://learning.oreilly.com/library/view/kafka-the-definitive/9781492043072/ch01.html#fig-7-replication)) is assigned to additional brokers, called *==followers==* of the partition.
+
+Replication provides redundancy of messages in the partition, <u>such that one of the followers can take over leadership if there is a broker failure. All producers must connect to the leader in order to publish messages, but consumers may fetch from either the leader or one of the followers</u>.
+
+A key feature of Apache Kafka is that of *==retention==*, which is the durable storage of messages for some period of time. Kafka brokers are configured with a default retention setting for topics, either retaining messages for some period of time (e.g., 7 days) or until the partition reaches a certain size in bytes (e.g., 1 GB). Once these limits are reached, messages are expired and deleted. In this way, the retention configuration defines a minimum amount of data available at any time. Individual topics can also be configured with their own retention settings so that messages are stored for only as long as they are useful. 
+
+Topics can also be configured as *log compacted*, which means that Kafka will retain only the last message produced with a specific key. This can be useful for changelog-type data, where only the last update is interesting.
+
+
+
+### Multiple Clusters
+
+As Kafka deployments grow, it is often advantageous to have multiple clusters. There are several reasons why this can be useful:
+
+- Segregation of types of data
+- Isolation for security requirements
+- Multiple datacenters (disaster recovery)
+
